@@ -9,12 +9,12 @@ import scipy.io as sio
 import torch
 from torch.utils.data import Dataset
 
-
+#sciezka
 def resolve_default_data_root() -> Path:
     project_root = Path(__file__).resolve().parents[1]
     return project_root / "data" / "LGHG2@n10C_to_25degC"
 
-
+#load train/test files
 def load_mat_file(mat_path: Path) -> tuple[np.ndarray, np.ndarray]:
     data = sio.loadmat(mat_path)
     if "X" not in data or "Y" not in data:
