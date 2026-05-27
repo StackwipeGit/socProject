@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import csv
 from torch import nn
 from torch.utils.data import DataLoader
 
@@ -18,6 +19,7 @@ from data_utils import (
     resolve_default_data_root,
 )
 from model import GRUSOCModel
+from visualize import plot_soc_prediction, plot_prediction_error
 
 
 def parse_args() -> argparse.Namespace:
@@ -139,20 +141,68 @@ def main() -> None:
             f"val_mae={val_mae:.6f}"
         )
 
-    print("\nPer-test-file sequence metrics:")
-    for test_file in test_files:
-        x_test_raw, y_test = load_mat_file(test_file)
-        x_test = normalize_features(x_test_raw, mean, std)
-        y_pred = predict_full_sequence(model, x_test, args.seq_len, device)
+        project_root = Path(__file__).resolve().parents[1]
+        plots_dir = project_root / "outputs" / "plots"
+        metrics_dir = project_root / "outputs" / "metrics"
+        metrics_dir.mkdir(parents=True, exist_ok=True)
 
-        valid_mask = ~np.isnan(y_pred)
-        metrics = compute_sequence_metrics(y_test[valid_mask], y_pred[valid_mask])
-        print(
-            f"{test_file.name} | "
-            f"RMSE={metrics.rmse_percent:.3f}% | "
-            f"MAE={metrics.mae_percent:.3f}% | "
-            f"MAX={metrics.max_percent:.3f}%"
+        metrics_csv_path = metrics_dir / "test_metrics.csv"
+
+        print("\nPer-test-file sequence metrics:")
+
+        metrics_rows = []
+
+        for test_file in test_files:
+            x_test_raw, y_test = load_mat_file(test_file)
+            x_test = normalize_features(x_test_raw, mean, std)
+            y_pred = predict_full_sequence(model, x_test, args.seq_len, device)
+
+            valid_mask = ~np.isnan(y_pred)
+            metrics = compute_sequence_metrics(y_test[valid_mask], y_pred[valid_mask])
+
+            print(
+                f"{test_file.name} | "
+                f"RMSE={metrics.rmse_percent:.3f}% | "
+                f"MAE={metrics.mae_percent:.3f}% | "
+                f"MAX={metrics.max_percent:.3f}%"
+            )
+
+            safe_name = test_file.stem.replace("@", "_").replace(" ", "_")
+
+            plot_soc_prediction(
+                y_true=y_test,
+                y_pred=y_pred,
+                title=f"SOC rzeczywisty vs przewidywany - {test_file.stem}",
+                save_path=plots_dir / f"{safe_name}_soc_prediction.png",
+            )
+
+            plot_prediction_error(
+                y_true=y_test,
+                y_pred=y_pred,
+                title=f"Błąd predykcji SOC - {test_file.stem}",
+                save_path=plots_dir / f"{safe_name}_prediction_error.png",
+            )
+
+            metrics_rows.append(
+                {
+                    "file": test_file.name,
+                    "rmse_percent": metrics.rmse_percent,
+                    "mae_percent": metrics.mae_percent,
+                    "max_percent": metrics.max_percent,
+                }
+            )
+
+    with metrics_csv_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=["file", "rmse_percent", "mae_percent", "max_percent"],
         )
+        writer.writeheader()
+        writer.writerows(metrics_rows)
+
+    print(f"\nSaved plots to: {plots_dir}")
+    print(f"Saved metrics to: {metrics_csv_path}")
+
 
     default_model_path = Path(__file__).resolve().parents[1] / "models" / "soc_gru_model.pt"
     save_path = Path(args.save_model) if args.save_model else default_model_path
