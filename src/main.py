@@ -26,7 +26,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train GRU model for battery SOC estimation.")
     parser.add_argument("--data_root", type=str, default=None, help="Path to dataset root.")
     parser.add_argument("--seq_len", type=int, default=256, help="Sliding window length.")
-    parser.add_argument("--stride", type=int, default=1, help="Sliding window stride for training.")
+    parser.add_argument("--stride", type=int, default=32, help="Sliding window stride for training.")
     parser.add_argument("--batch_size", type=int, default=128, help="Batch size.")
     parser.add_argument("--epochs", type=int, default=20, help="Number of epochs.")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate.")
@@ -141,56 +141,56 @@ def main() -> None:
             f"val_mae={val_mae:.6f}"
         )
 
-        project_root = Path(__file__).resolve().parents[1]
-        plots_dir = project_root / "outputs" / "plots"
-        metrics_dir = project_root / "outputs" / "metrics"
-        metrics_dir.mkdir(parents=True, exist_ok=True)
+    project_root = Path(__file__).resolve().parents[1]
+    plots_dir = project_root / "outputs" / "plots"
+    metrics_dir = project_root / "outputs" / "metrics"
+    metrics_dir.mkdir(parents=True, exist_ok=True)
 
-        metrics_csv_path = metrics_dir / "test_metrics.csv"
+    metrics_csv_path = metrics_dir / "test_metrics.csv"
 
-        print("\nPer-test-file sequence metrics:")
+    print("\nPer-test-file sequence metrics:")
 
-        metrics_rows = []
+    metrics_rows = []
 
-        for test_file in test_files:
-            x_test_raw, y_test = load_mat_file(test_file)
-            x_test = normalize_features(x_test_raw, mean, std)
-            y_pred = predict_full_sequence(model, x_test, args.seq_len, device)
+    for test_file in test_files:
+        x_test_raw, y_test = load_mat_file(test_file)
+        x_test = normalize_features(x_test_raw, mean, std)
+        y_pred = predict_full_sequence(model, x_test, args.seq_len, device)
 
-            valid_mask = ~np.isnan(y_pred)
-            metrics = compute_sequence_metrics(y_test[valid_mask], y_pred[valid_mask])
+        valid_mask = ~np.isnan(y_pred)
+        metrics = compute_sequence_metrics(y_test[valid_mask], y_pred[valid_mask])
 
-            print(
-                f"{test_file.name} | "
-                f"RMSE={metrics.rmse_percent:.3f}% | "
-                f"MAE={metrics.mae_percent:.3f}% | "
-                f"MAX={metrics.max_percent:.3f}%"
-            )
+        print(
+            f"{test_file.name} | "
+            f"RMSE={metrics.rmse_percent:.3f}% | "
+            f"MAE={metrics.mae_percent:.3f}% | "
+            f"MAX={metrics.max_percent:.3f}%"
+        )
 
-            safe_name = test_file.stem.replace("@", "_").replace(" ", "_")
+        safe_name = test_file.stem.replace("@", "_").replace(" ", "_")
 
-            plot_soc_prediction(
-                y_true=y_test,
-                y_pred=y_pred,
-                title=f"SOC rzeczywisty vs przewidywany - {test_file.stem}",
-                save_path=plots_dir / f"{safe_name}_soc_prediction.png",
-            )
+        plot_soc_prediction(
+            y_true=y_test,
+            y_pred=y_pred,
+            title=f"SOC rzeczywisty vs przewidywany - {test_file.stem}",
+            save_path=plots_dir / f"{safe_name}_soc_prediction.png",
+        )
 
-            plot_prediction_error(
-                y_true=y_test,
-                y_pred=y_pred,
-                title=f"Błąd predykcji SOC - {test_file.stem}",
-                save_path=plots_dir / f"{safe_name}_prediction_error.png",
-            )
+        plot_prediction_error(
+            y_true=y_test,
+            y_pred=y_pred,
+            title=f"Błąd predykcji SOC - {test_file.stem}",
+            save_path=plots_dir / f"{safe_name}_prediction_error.png",
+        )
 
-            metrics_rows.append(
-                {
-                    "file": test_file.name,
-                    "rmse_percent": metrics.rmse_percent,
-                    "mae_percent": metrics.mae_percent,
-                    "max_percent": metrics.max_percent,
-                }
-            )
+        metrics_rows.append(
+            {
+                "file": test_file.name,
+                "rmse_percent": metrics.rmse_percent,
+                "mae_percent": metrics.mae_percent,
+                "max_percent": metrics.max_percent,
+            }
+        )
 
     with metrics_csv_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(

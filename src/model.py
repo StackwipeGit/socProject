@@ -8,7 +8,7 @@ class GRUSOCModel(nn.Module):
         self,
         input_size: int = 5,
         hidden_size: int = 64,
-        num_layers: int = 3,
+        num_layers: int = 2,
         dropout: float = 0.2,
     ) -> None:
         super().__init__()
