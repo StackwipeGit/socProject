@@ -1,6 +1,6 @@
 # SOC Project Layout
 
-Proponowany układ projektu:
+układ projektu:
 
 ```text
 SOC_project/
@@ -19,7 +19,7 @@ SOC_project/
 
 ## Jak uruchomić
 
-Umieść dataset tutaj:
+ dataset tutaj:
 
 ```text
 data/LGHG2@n10C_to_25degC/
@@ -31,7 +31,7 @@ a potem uruchom:
 python src/main.py
 ```
 
-Opcjonalnie możesz nadpisać ścieżkę:
+ można nadpisać ścieżkę:
 
 ```bash
 python src/main.py --data_root "ścieżka/do/LGHG2@n10C_to_25degC"
