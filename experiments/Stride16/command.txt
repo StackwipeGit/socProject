@@ -1,0 +1,1 @@
+python src/main.py --stride 16 --epochs 20 --seq_len 256 --hidden_size 64 --num_layers 2 --dropout 0.2 --batch_size 128 --lr 0.001

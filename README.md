@@ -36,3 +36,17 @@ python src/main.py
 ```bash
 python src/main.py --data_root "ścieżka/do/LGHG2@n10C_to_25degC"
 ```
+
+
+```bash
+python src/main.py --stride 32 --epochs 20
+```
+Symulacja rzeczywistego modelu
+```bash
+python src/predict_realtime_sim.py --max_samples 5000 --print_every 500
+```
+
+Stworzenie wykresów
+```bash
+python src/plot_realtime_sim.py
+```

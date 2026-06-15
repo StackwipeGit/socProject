@@ -31,3 +31,4 @@ class GRUSOCModel(nn.Module):
         last_hidden = out[:, -1, :]
         y = self.head(last_hidden)
         return y.squeeze(-1)
+
